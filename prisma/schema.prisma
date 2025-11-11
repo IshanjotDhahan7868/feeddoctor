@@ -1,0 +1,92 @@
+// Prisma schema for FeedDoctor
+// Development uses SQLite; production can switch to Postgres
+
+datasource db {
+  provider = env("DATABASE_PROVIDER") // allows switching between sqlite and postgres
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Store {
+  id            String        @id @default(cuid())
+  name          String
+  url           String        @unique
+  contactEmail  String?
+  contactPageUrl String?
+  instagramUrl  String?
+  isShopify     Boolean       @default(false)
+  products      Product[]
+  issues        Issue[]
+  outreachDraft OutreachDraft?
+  pipeline      PipelineStatus?
+  createdAt     DateTime      @default(now())
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  storeId     String
+  store       Store   @relation(fields: [storeId], references: [id])
+  url         String
+  title       String?
+  price       String?
+  brand       String?
+  gtin        String?
+  mpn         String?
+  imageWidth  Int?
+  imageHeight Int?
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Issue {
+  id          String   @id @default(cuid())
+  storeId     String
+  productId   String?
+  store       Store    @relation(fields: [storeId], references: [id])
+  product     Product? @relation(fields: [productId], references: [id])
+  severity    Severity
+  description String
+  createdAt   DateTime  @default(now())
+}
+
+model OutreachDraft {
+  id        String   @id @default(cuid())
+  storeId   String   @unique
+  store     Store    @relation(fields: [storeId], references: [id])
+  subject   String
+  firstLine String
+  emailBody String
+  dmBody    String
+  createdAt DateTime  @default(now())
+}
+
+enum Stage {
+  NEW
+  CONTACTED
+  INTERESTED
+  CLOSED
+}
+
+model PipelineStatus {
+  id        String  @id @default(cuid())
+  storeId   String  @unique
+  store     Store   @relation(fields: [storeId], references: [id])
+  stage     Stage   @default(NEW)
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  email           String
+  stripeSessionId String   @unique
+  amount          Int
+  status          String
+  createdAt       DateTime @default(now())
+}
