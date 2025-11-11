@@ -1,7 +1,6 @@
-// /app/api/stripe/webhook/route.ts
+// app/api/stripe/webhook/route.ts
 import Stripe from "stripe";
 import { headers } from "next/headers";
-import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,36 +26,36 @@ export async function POST(req: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch (err: any) {
-    console.error("Webhook signature error:", err?.message);
-    return new Response(`Webhook Error: ${err?.message}`, { status: 400 });
+    console.error("Webhook signature error:", err.message);
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
+
+  // ✅ import prisma ONLY inside the handler
+  const { prisma } = await import("@/lib/prisma");
 
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
-      // Fetch full session with line items if you need priceId later:
-      // const full = await stripe.checkout.sessions.retrieve(session.id, { expand: ["line_items.data.price"] });
-
       await prisma.order.create({
         data: {
-          email: session.customer_details?.email ?? session.customer_email ?? "unknown@unknown",
+          email:
+            session.customer_details?.email ??
+            session.customer_email ??
+            "unknown@unknown.com",
           stripeSessionId: session.id,
-          // priceId: (full.line_items?.data?.[0]?.price?.id as string | undefined) ?? null,
-          priceId: null,               // keep null unless you expand line_items above
+          priceId: session.metadata?.priceId ?? null,
           amount: session.amount_total ?? null,
           status: "paid",
         },
       });
 
-      console.log("✅ checkout.session.completed stored:", session.id);
+      console.log("✅ Stored checkout event:", session.id);
     }
-
-    // You can optionally handle payment_intent.succeeded, etc. here.
 
     return new Response("OK", { status: 200 });
   } catch (err) {
-    console.error("❌ Webhook handler error:", err);
+    console.error("Webhook handler error:", err);
     return new Response("Handler Error", { status: 500 });
   }
 }
