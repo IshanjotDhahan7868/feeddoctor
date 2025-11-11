@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { parse as parseUrl } from 'url';
 
 /**
