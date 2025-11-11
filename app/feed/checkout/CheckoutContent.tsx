@@ -12,20 +12,29 @@ export default function CheckoutContent() {
   useEffect(() => {
     async function createSession() {
       try {
-        const res = await fetch('/api/stripe/checkout', {
-          method: 'POST',
+        const sku = params.get("sku") || "fixpack";
+
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sku }),
         });
+
         if (!res.ok) {
-          throw new Error('Failed to create checkout session');
+          const errTxt = await res.text();
+          throw new Error("Failed to create checkout session: " + errTxt);
         }
+
         const json = await res.json();
+
         if (json.url) {
           window.location.href = json.url;
         } else {
-          throw new Error('Invalid session response');
+          throw new Error("Invalid response from checkout API");
         }
+
       } catch (err: any) {
-        setError(err.message || 'Something went wrong');
+        setError(err.message || "Something went wrong");
         setLoading(false);
       }
     }
