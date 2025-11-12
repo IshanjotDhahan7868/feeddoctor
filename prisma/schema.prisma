@@ -1,7 +1,3 @@
-// =========================================
-// ✅ GENERATOR + DATASOURCE (Postgres)
-// =========================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,30 +8,24 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// =========================================
-// ✅ ORIGINAL FEEDDOCTOR MODELS
-// =========================================
-
 model Store {
   id             String          @id @default(cuid())
   name           String
   url            String          @unique
-  stripeId  String  @unique
   contactEmail   String?
   contactPageUrl String?
   instagramUrl   String?
   isShopify      Boolean         @default(false)
-  products       Product[]
+  createdAt      DateTime        @default(now())
   issues         Issue[]
   outreachDraft  OutreachDraft?
   pipeline       PipelineStatus?
-  createdAt      DateTime        @default(now())
+  products       Product[]
 }
 
 model Product {
   id          String  @id @default(cuid())
   storeId     String
-  store       Store   @relation(fields: [storeId], references: [id])
   url         String
   title       String?
   price       String?
@@ -45,66 +35,50 @@ model Product {
   imageWidth  Int?
   imageHeight Int?
   Issue       Issue[]
-}
-
-enum Severity {
-  LOW
-  MEDIUM
-  HIGH
+  store       Store   @relation(fields: [storeId], references: [id])
 }
 
 model Issue {
   id          String   @id @default(cuid())
   storeId     String
   productId   String?
-  store       Store    @relation(fields: [storeId], references: [id])
-  product     Product? @relation(fields: [productId], references: [id])
   severity    Severity
   description String
   createdAt   DateTime @default(now())
+  product     Product? @relation(fields: [productId], references: [id])
+  store       Store    @relation(fields: [storeId], references: [id])
 }
 
 model OutreachDraft {
   id        String   @id @default(cuid())
   storeId   String   @unique
-  store     Store    @relation(fields: [storeId], references: [id])
   subject   String
   firstLine String
   emailBody String
   dmBody    String
   createdAt DateTime @default(now())
-}
-
-enum Stage {
-  NEW
-  CONTACTED
-  INTERESTED
-  CLOSED
+  store     Store    @relation(fields: [storeId], references: [id])
 }
 
 model PipelineStatus {
   id        String   @id @default(cuid())
   storeId   String   @unique
-  store     Store    @relation(fields: [storeId], references: [id])
   stage     Stage    @default(NEW)
   updatedAt DateTime @updatedAt
+  store     Store    @relation(fields: [storeId], references: [id])
 }
-
-// =========================================
-// ✅ NEW MODELS FOR PAYMENTS + JOBS
-// =========================================
 
 model Order {
   id              String   @id @default(cuid())
   email           String
   stripeSessionId String   @unique
+  priceId         String?
   amount          Int?
   status          String   @default("pending")
   deliverableUrl  String?
   createdAt       DateTime @default(now())
+  stripeId        String   @unique
 }
-
-
 
 model WebhookEvent {
   id        String   @id @default(cuid())
@@ -116,7 +90,7 @@ model WebhookEvent {
 model ScanJob {
   id         String   @id @default(cuid())
   createdAt  DateTime @default(now())
-  sourceType String // csv / url
+  sourceType String
   input      String
   email      String?
   status     String   @default("pending")
@@ -129,4 +103,17 @@ model OutreachLead {
   storeUrl  String
   stage     String   @default("new")
   notes     String?
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Stage {
+  NEW
+  CONTACTED
+  INTERESTED
+  CLOSED
 }
