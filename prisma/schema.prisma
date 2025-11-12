@@ -105,6 +105,7 @@ model Order {
   createdAt   DateTime @default(now())
 }
 
+
 model WebhookEvent {
   id        String   @id @default(cuid())
   type      String
