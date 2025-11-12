@@ -1,60 +1,96 @@
-import Stripe from "stripe";
-import { NextRequest } from "next/server";
 import { headers } from "next/headers";
+import Stripe from "stripe";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
+  apiVersion: "2024-06-20",
 });
 
-export async function POST(req: NextRequest) {
-  const body = await req.text(); // ✅ raw body — required by Stripe
-  const signature = headers().get("stripe-signature");
+export const runtime = "nodejs";
+
+/**
+ * Stripe webhook handler for FeedDoctor
+ * -------------------------------------
+ * Receives payment events and triggers the fulfillment pipeline.
+ * Must verify Stripe signature with the RAW request body.
+ */
+export async function POST(req: Request) {
+  const sig = (await headers()).get("stripe-signature")!;
+  const body = await req.text(); // ✅ must be raw text, not JSON
+
+  let event: Stripe.Event;
 
   try {
-    const event = stripe.webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       body,
-      signature!,
+      sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
+  } catch (err: any) {
+    console.error("❌ Stripe signature verification failed:", err.message);
+    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+  }
 
-    // ✅ Log the event type for visibility
-    console.log(`🔔 Received event: ${event.type}`);
+  // ✅ Log incoming event
+  console.log("🔔 Received event:", event.type);
 
-    // ✅ Handle checkout session completion
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const email =
+          session.customer_details?.email ?? session.customer_email ?? "";
+        const scanId = session.metadata?.scanId ?? null;
 
-      console.log("✅ Stored checkout event:", session.id);
+        console.log("✅ Checkout complete for:", email, "Scan ID:", scanId);
 
-      await prisma.order.create({
-        data: {
-          stripeSessionId: session.id, // ✅ matches your Prisma schema
-          email: session.customer_email ?? "",
-          amount: session.amount_total
-            ? Math.floor(session.amount_total / 100)
-            : 0,
-          status: "paid",
-        },
-      });
+        // 1️⃣ Record payment in DB
+        await prisma.order.upsert({
+          where: { stripeSessionId: session.id },
+          update: {
+            status: "PAID",
+            amount: session.amount_total ?? 0,
+            currency: session.currency ?? "usd",
+          },
+          create: {
+            stripeSessionId: session.id,
+            status: "PAID",
+            amount: session.amount_total ?? 0,
+            currency: session.currency ?? "usd",
+            email,
+            scanId,
+          },
+        });
+
+        // 2️⃣ Trigger fulfillment job (sends CSV + email)
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/feed/fulfill`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            scanId,
+            stripeSessionId: session.id,
+          }),
+        });
+
+        break;
+      }
+
+      case "payment_intent.succeeded": {
+        console.log("💰 Payment intent succeeded");
+        break;
+      }
+
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
-    // ✅ (Optional) Log other events you want to handle later
-    else {
-      await prisma.webhookEvent.create({
-        data: {
-          type: event.type,
-          raw: event as any,
-        },
-      });
-    }
-
-    return new Response("Webhook processed successfully", { status: 200 });
-  } catch (err) {
-    console.error("❌ Webhook Error:", err);
-    return new Response(
-      `Webhook Error: ${(err as Error).message}`,
-      { status: 400 }
-    );
+    return NextResponse.json({ received: true });
+  } catch (err: any) {
+    console.error("⚠️ Webhook handling error:", err);
+    return new NextResponse(`Webhook handler error: ${err.message}`, {
+      status: 500,
+    });
   }
 }

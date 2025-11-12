@@ -1,12 +1,12 @@
 export default function SuccessPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-white to-gray-50 text-center px-4">
-      <h1 className="text-4xl font-bold text-green-600 mb-4">
-        ✅ Payment Successful!
-      </h1>
+      <h1 className="text-4xl font-bold text-green-600 mb-4">✅ Payment Successful!</h1>
       <p className="text-gray-700 max-w-md mb-6">
-        Your feed is now being fixed. You’ll receive an email with your cleaned
-        CSV file within 24 hours. Thank you for using <b>FeedDoctor</b>!
+        Thank you for your purchase! We're processing your feed now. You will
+        receive an email with your cleaned CSV once it is ready. You can
+        always check the status of your past scans on the
+        <a href="/scans" className="underline text-blue-600"> scans page</a>.
       </p>
       <a
         href="/"

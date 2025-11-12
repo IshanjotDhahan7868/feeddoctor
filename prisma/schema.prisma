@@ -71,14 +71,17 @@ model PipelineStatus {
 model Order {
   id              String   @id @default(cuid())
   email           String
+  scanId          String?
   stripeSessionId String   @unique
+  stripeId        String?
+  status          String   @default("PENDING")
+  amount          Int
+  currency        String   @default("usd")   // ✅ added field
   priceId         String?
-  amount          Int?
-  status          String   @default("pending")
   deliverableUrl  String?
   createdAt       DateTime @default(now())
-  stripeId        String   @unique
 }
+
 
 model WebhookEvent {
   id        String   @id @default(cuid())
