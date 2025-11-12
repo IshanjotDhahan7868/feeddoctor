@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     console.log("✅ Resend response:", res.data);
 
     // 2️⃣ Upsert outreach record in database
-    await prisma.outreach.upsert({
+    await prisma.outreachLead.upsert({
       where: { storeUrl },
       update: {
         stage: "contacted",
