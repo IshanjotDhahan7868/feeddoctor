@@ -4,11 +4,9 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
 
 // Initialize Stripe only if secret key is provided
 export const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, {
-      // ✅ Stripe API: must match the installed SDK version
-      apiVersion: '2022-11-15',
-    })
+  ? new Stripe(stripeSecretKey)
   : null;
+
 
 export async function createCheckoutSession(): Promise<{ url: string }> {
   if (!stripe) {
