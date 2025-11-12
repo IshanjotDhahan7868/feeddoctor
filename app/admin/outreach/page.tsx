@@ -4,7 +4,23 @@ import { useState } from "react";
 export default function AdminOutreachPage() {
   const [auth, setAuth] = useState(false);
   const [password, setPassword] = useState("");
+  const [logs, setLogs] = useState<string[]>([]);
   const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || "shan123";
+
+  const appendLog = (msg: string) =>
+    setLogs((prev) => [`${new Date().toLocaleTimeString()} — ${msg}`, ...prev]);
+
+  const runEndpoint = async (endpoint: string, label: string) => {
+    appendLog(`▶ Running ${label}...`);
+    try {
+      const res = await fetch(endpoint, { method: "POST" });
+      const data = await res.json();
+      appendLog(`✅ ${label} done`);
+      appendLog(JSON.stringify(data, null, 2));
+    } catch (err: any) {
+      appendLog(`❌ ${label} failed: ${err.message}`);
+    }
+  };
 
   if (!auth) {
     return (
@@ -34,27 +50,25 @@ export default function AdminOutreachPage() {
     );
   }
 
-  return <OutreachDashboard />;
-}
-
-function OutreachDashboard() {
   return (
     <main className="min-h-screen bg-black text-white p-8">
       <h1 className="text-3xl font-bold mb-6 text-purple-400">
         🧠 FeedDoctor Admin — Outreach Dashboard
       </h1>
-      <p className="text-gray-400 mb-4">
+      <p className="text-gray-400 mb-6">
         Use this panel to find stores, analyze feeds, and send outreach emails.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-3 mb-10">
         <div className="p-6 bg-gray-900 rounded-xl border border-gray-800">
           <h2 className="text-lg font-semibold mb-2 text-purple-300">Discover</h2>
           <p className="text-gray-400 mb-3">
             Find Shopify stores in a given niche (e.g. pets, cosmetics, apparel).
           </p>
           <button
-            onClick={() => alert("Running /api/outreach/discover ...")}
+            onClick={() =>
+              runEndpoint("/api/outreach/discover", "Run Discovery")
+            }
             className="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded-md"
           >
             Run Discovery
@@ -67,7 +81,7 @@ function OutreachDashboard() {
             Check each store for Google Merchant Center feed issues.
           </p>
           <button
-            onClick={() => alert("Running /api/outreach/analyze ...")}
+            onClick={() => runEndpoint("/api/outreach/analyze", "Run Analysis")}
             className="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded-md"
           >
             Run Analysis
@@ -77,15 +91,23 @@ function OutreachDashboard() {
         <div className="p-6 bg-gray-900 rounded-xl border border-gray-800">
           <h2 className="text-lg font-semibold mb-2 text-purple-300">Outreach</h2>
           <p className="text-gray-400 mb-3">
-            Generate and send personalized outreach messages to store owners.
+            Generate personalized outreach messages to store owners.
           </p>
           <button
-            onClick={() => alert("Generating outreach drafts ...")}
+            onClick={() => runEndpoint("/api/outreach/draft", "Generate Messages")}
             className="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded-md"
           >
             Generate Messages
           </button>
         </div>
+      </div>
+
+      <div className="p-4 bg-gray-900 rounded-xl border border-gray-800 max-h-[400px] overflow-y-auto font-mono text-sm whitespace-pre-wrap">
+        {logs.length === 0 ? (
+          <p className="text-gray-500 text-center">No logs yet. Run a task above.</p>
+        ) : (
+          logs.map((line, i) => <div key={i}>{line}</div>)
+        )}
       </div>
     </main>
   );
