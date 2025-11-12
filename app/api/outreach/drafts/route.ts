@@ -1,21 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { NextResponse } from "next/server";
 
-const draftsSchema = z.object({ stores: z.array(z.string().min(1)).min(1) });
+export async function POST() {
+  try {
+    // Demo messages — replace with AI-generated drafts later
+    const messages = [
+      {
+        to: "owner@petparadise.com",
+        subject: "Fix your Google Shopping feed issues fast",
+        body: `Hi there! We noticed your store has image-size disapprovals.
+FeedDoctor can fix your feed and boost visibility in under 24h.`,
+      },
+      {
+        to: "owner@glowcosmetics.com",
+        subject: "Quick fix for your Google feed disapprovals",
+        body: `We analyzed your feed and found small GTIN errors.
+FeedDoctor can automatically fix and validate them.`,
+      },
+    ];
 
-export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const parsed = draftsSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    return NextResponse.json({
+      success: true,
+      message: "Draft generation completed",
+      count: messages.length,
+      messages,
+    });
+  } catch (err: any) {
+    console.error("DRAFT ERROR:", err);
+    return NextResponse.json(
+      { success: false, error: err.message || "Unknown error" },
+      { status: 500 }
+    );
   }
-  const { stores } = parsed.data;
-  const drafts = stores.map((store: string) => {
-    const subject = `Fix your Google Shopping disapprovals for ${store}`;
-    const firstLine = `Hi ${store} team,`;
-    const emailBody = `Hi ${store} team,\n\nWe noticed some issues with your product listings on Google Shopping such as missing GTINs and long titles. FeedDoctor can generate a ready‑to‑upload CSV and a checklist to get your products approved within 48h.\n\nIf you’d like to see a quick preview, reply to this email or use our free scanner.\n\nBest regards,\nFeedDoctor`;
-    const dmBody = `Hi! We spotted a few feed issues on your Google Shopping listings. FeedDoctor can help fix missing GTINs and long titles. Get a free scan on our site.\n\n(Unsubscribe by replying ‘stop’).`;
-    return { storeName: store, subject, firstLine, emailBody, dmBody };
-  });
-  return NextResponse.json({ drafts });
 }
