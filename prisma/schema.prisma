@@ -100,10 +100,12 @@ model ScanJob {
 model OutreachLead {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-  storeUrl  String
+  storeUrl  String   @unique
   stage     String   @default("new")
   notes     String?
 }
+
+
 
 enum Severity {
   LOW
