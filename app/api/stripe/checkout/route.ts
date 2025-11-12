@@ -42,8 +42,9 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${site}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${site}/checkout?canceled=1`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/feed/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/feed/cancel`,
+
       // capture the email if provided so you know who purchased
       customer_email: email || undefined,
       metadata: { sku },
