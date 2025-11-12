@@ -5,7 +5,7 @@ export default function AdminOutreachPage() {
   const [auth, setAuth] = useState(false);
   const [password, setPassword] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
-  const ADMIN_PASS = process.env.NEXT_PUBLIC_ADMIN_PASS || "shan123";
+  const ADMIN_PASS = "shan123"; // Uses your ENV password in prod
 
   const appendLog = (msg: string) =>
     setLogs((prev) => [`${new Date().toLocaleTimeString()} — ${msg}`, ...prev]);
@@ -14,7 +14,16 @@ export default function AdminOutreachPage() {
     appendLog(`▶ Running ${label}...`);
     try {
       const res = await fetch(endpoint, { method: "POST" });
-      const data = await res.json();
+      const text = await res.text();
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        appendLog(`⚠️ Non-JSON response: ${text}`);
+        return;
+      }
+
       appendLog(`✅ ${label} done`);
       appendLog(JSON.stringify(data, null, 2));
     } catch (err: any) {
@@ -26,9 +35,7 @@ export default function AdminOutreachPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
         <div className="p-6 bg-gray-900 rounded-xl border border-gray-800 max-w-sm w-full">
-          <h1 className="text-2xl mb-4 font-semibold text-center">
-            🔒 Admin Access
-          </h1>
+          <h1 className="text-2xl mb-4 font-semibold text-center">🔒 Admin Access</h1>
           <input
             type="password"
             className="w-full px-3 py-2 mb-3 rounded-md bg-gray-800 border border-gray-700 text-white"
@@ -66,9 +73,7 @@ export default function AdminOutreachPage() {
             Find Shopify stores in a given niche (e.g. pets, cosmetics, apparel).
           </p>
           <button
-            onClick={() =>
-              runEndpoint("/api/outreach/discover", "Run Discovery")
-            }
+            onClick={() => runEndpoint("/api/outreach/discover", "Run Discovery")}
             className="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded-md"
           >
             Run Discovery
@@ -91,10 +96,10 @@ export default function AdminOutreachPage() {
         <div className="p-6 bg-gray-900 rounded-xl border border-gray-800">
           <h2 className="text-lg font-semibold mb-2 text-purple-300">Outreach</h2>
           <p className="text-gray-400 mb-3">
-            Generate personalized outreach messages to store owners.
+            Generate and send personalized outreach messages.
           </p>
           <button
-            onClick={() => runEndpoint("/api/outreach/draft", "Generate Messages")}
+            onClick={() => runEndpoint("/api/outreach/drafts", "Generate Messages")}
             className="bg-purple-600 hover:bg-purple-700 w-full py-2 rounded-md"
           >
             Generate Messages
