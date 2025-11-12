@@ -1,61 +1,43 @@
-// app/api/stripe/webhook/route.ts
 import Stripe from "stripe";
+import { NextRequest } from "next/server";
 import { headers } from "next/headers";
-
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const maxDuration = 40;
+import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
-} as any);
+  apiVersion: "2024-06-20",
+});
 
-export async function POST(req: Request) {
-  const body = await req.text();
+export async function POST(req: NextRequest) {
+  const body = await req.text(); // ← important: raw body, not JSON
   const sig = headers().get("stripe-signature");
 
-  if (!sig) {
-    return new Response("Missing stripe-signature", { status: 400 });
-  }
-
-  let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
+    const event = stripe.webhooks.constructEvent(
       body,
-      sig,
+      sig!,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err: any) {
-    console.error("Webhook signature error:", err.message);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
-  }
 
-  // ✅ import prisma ONLY inside the handler
-  const { prisma } = await import("@/lib/prisma");
-
-  try {
+    // ✅ Handle successful checkout
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      console.log("✅ Stored checkout event:", session.id);
+
+      // Optional: record in DB
       await prisma.order.create({
         data: {
-          email:
-            session.customer_details?.email ??
-            session.customer_email ??
-            "unknown@unknown.com",
-          stripeSessionId: session.id,
-          priceId: session.metadata?.priceId ?? null,
-          amount: session.amount_total ?? null,
+          stripeId: session.id,
+          email: session.customer_email ?? "",
+          amount: session.amount_total ? session.amount_total / 100 : 0,
           status: "paid",
         },
       });
-
-      console.log("✅ Stored checkout event:", session.id);
     }
 
     return new Response("OK", { status: 200 });
   } catch (err) {
-    console.error("Webhook handler error:", err);
-    return new Response("Handler Error", { status: 500 });
+    console.error("❌ Webhook Error:", err);
+    return new Response("Webhook Error", { status: 400 });
   }
 }
