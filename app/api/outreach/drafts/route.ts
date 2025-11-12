@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 export async function POST() {
   try {
-    // Example generated outreach messages
     const messages = [
       {
         to: "owner@petparadise.com",
@@ -24,16 +23,17 @@ FeedDoctor delivers a clean, validated feed ready to upload.`,
       },
     ];
 
+    // ✅ Always return JSON — otherwise frontend .json() fails
     return NextResponse.json({
       success: true,
       message: "Draft generation completed",
       count: messages.length,
       messages,
     });
-  } catch (err: any) {
-    console.error("DRAFT ERROR:", err);
+  } catch (error: any) {
+    console.error("DRAFT ERROR:", error);
     return NextResponse.json(
-      { success: false, error: err.message || "Unknown error" },
+      { success: false, error: error.message || "Unknown error" },
       { status: 500 }
     );
   }
