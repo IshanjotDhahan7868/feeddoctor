@@ -39,7 +39,7 @@ export async function POST() {
           where: { storeUrl: msg.storeUrl },
           update: {
             stage: "contacted",
-            notes: `Email sent to ${msg.to} (Resend ID: ${res.id ?? "none"})`,
+            notes: `Email sent to ${msg.to} (Resend ID: ${res.data?.id ?? "none"})`,
           },
           create: {
             storeUrl: msg.storeUrl,
