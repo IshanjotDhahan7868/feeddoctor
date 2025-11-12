@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "description": "Fix Google Merchant Center disapprovals and automate compliant outreach for e-commerce merchants.",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:generate": "prisma generate",
-    "prisma:seed": "prisma db seed",
-    "lint": "next lint"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "prisma generate && next build",
+  "start": "next start",
+  "prisma:migrate": "prisma migrate dev",
+  "prisma:generate": "prisma generate",
+  "prisma:seed": "prisma db seed"
+},
+
   "dependencies": {
     "@prisma/client": "^5.16.1",
     "cheerio": "1.0.0-rc.12",
