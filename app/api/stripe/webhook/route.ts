@@ -26,13 +26,13 @@ export async function POST(req: NextRequest) {
 
       // Optional: record in DB
       await prisma.order.create({
-        data: {
-          stripeId: session.id,
-          email: session.customer_email ?? "",
-          amount: session.amount_total ? session.amount_total / 100 : 0,
-          status: "paid",
-        },
-      });
+  data: {
+    stripeSessionId: session.id, // ✅ matches your schema
+    email: session.customer_email ?? "",
+    amount: session.amount_total ? Math.floor(session.amount_total / 100) : 0,
+    status: "paid",
+  },
+});
     }
 
     return new Response("OK", { status: 200 });
