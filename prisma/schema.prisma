@@ -95,15 +95,15 @@ model PipelineStatus {
 // =========================================
 
 model Order {
-  id          String   @id @default(cuid())
-  email       String
-  stripeId    String   @unique
-  priceId     String?
-  amount      Int?
-  status      String   @default("pending")
-  deliverableUrl String?
-  createdAt   DateTime @default(now())
+  id              String   @id @default(cuid())
+  email           String
+  stripeSessionId String   @unique
+  amount          Int?
+  status          String   @default("pending")
+  deliverableUrl  String?
+  createdAt       DateTime @default(now())
 }
+
 
 
 model WebhookEvent {
