@@ -1,7 +1,20 @@
 import { NextResponse } from "next/server";
+import { isMockMode } from "@/lib/runtime";
 
 export async function POST() {
   try {
+    if (!isMockMode()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Outreach endpoint is only available in MOCK_MODE for now",
+          code: "NOT_IMPLEMENTED",
+          mockMode: false,
+        },
+        { status: 501 }
+      );
+    }
+
     const messages = [
       {
         to: "owner@petparadise.com",
@@ -25,6 +38,7 @@ FeedDoctor delivers a clean, validated feed ready to upload.`,
 
     // ✅ Always return JSON — otherwise frontend .json() fails
     return NextResponse.json({
+      mockMode: true,
       success: true,
       message: "Draft generation completed",
       count: messages.length,

@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
+import { resend } from "@/lib/resend";
 
 /**
  * /api/outreach/send
@@ -18,6 +16,13 @@ export async function POST(req: Request) {
 
     if (!to || !subject || !html || !storeUrl) {
       return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+    }
+
+    if (!resend) {
+      return NextResponse.json(
+        { error: "Email provider is not configured" },
+        { status: 503 }
+      );
     }
 
     // 1️⃣ Send email via Resend
