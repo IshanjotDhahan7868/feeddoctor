@@ -5,11 +5,6 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Initialize Stripe once with your API key. See: https://stripe.com/docs/api?lang=node
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
-} as any);
-
 /**
  * Create a Stripe checkout session.
  *
@@ -20,8 +15,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 type Body = { sku?: string; email?: string };
 
+function getStripeClient() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    return null;
+  }
+
+  return new Stripe(secretKey, {
+    apiVersion: "2022-11-15",
+  } as any);
+}
+
 export async function POST(req: Request) {
   try {
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return NextResponse.json({ error: "Missing STRIPE_SECRET_KEY" }, { status: 500 });
+    }
+
     const { sku = "fixpack", email } = (await req.json()) as Body;
 
     const priceId = process.env.STRIPE_PRICE_ID;
@@ -42,8 +53,8 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/feed/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/feed/cancel`,
+      success_url: `${site}/feed/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${site}/feed/cancel`,
 
       // capture the email if provided so you know who purchased
       customer_email: email || undefined,
