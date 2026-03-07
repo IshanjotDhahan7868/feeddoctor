@@ -69,19 +69,32 @@ model PipelineStatus {
 }
 
 model Order {
-  id              String   @id @default(cuid())
+  id              String               @id @default(cuid())
   email           String
   scanId          String?
-  stripeSessionId String   @unique
+  stripeSessionId String               @unique
   stripeId        String?
-  status          String   @default("PENDING")
+  status          String               @default("PENDING")
   amount          Int
-  currency        String   @default("usd")   // ✅ added field
+  currency        String               @default("usd")   // ✅ added field
   priceId         String?
   deliverableUrl  String?
-  createdAt       DateTime @default(now())
+  artifact        FulfillmentArtifact?
+  createdAt       DateTime             @default(now())
 }
 
+
+
+model FulfillmentArtifact {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  version    Int      @default(1)
+  path       String
+  checksum   String
+  url        String
+  createdAt  DateTime @default(now())
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
 
 model WebhookEvent {
   id        String   @id @default(cuid())
@@ -108,6 +121,14 @@ model OutreachLead {
   notes     String?
 }
 
+
+model InboxMessage {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  inputText      String
+  classification String
+  replies        Json
+}
 
 
 enum Severity {

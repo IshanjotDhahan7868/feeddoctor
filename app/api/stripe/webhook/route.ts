@@ -1,12 +1,19 @@
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-
 export const runtime = "nodejs";
+
+function getStripeClient() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    return null;
+  }
+
+  return new Stripe(secretKey);
+}
 
 /**
  * Stripe webhook handler for FeedDoctor
@@ -15,17 +22,26 @@ export const runtime = "nodejs";
  * Must verify Stripe signature with the RAW request body.
  */
 export async function POST(req: Request) {
-  const sig = (await headers()).get("stripe-signature")!;
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return apiError("Missing STRIPE_SECRET_KEY", 500);
+  }
+
+  const sig = (await headers()).get("stripe-signature");
+  if (!sig) {
+    return apiError("Missing stripe-signature header", 400);
+  }
+
   const body = await req.text(); // ✅ must be raw text, not JSON
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    return apiError("Missing STRIPE_WEBHOOK_SECRET", 500);
+  }
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
     console.error("❌ Stripe signature verification failed:", err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
@@ -69,7 +85,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             email,
             scanId,
-            stripeSessionId: session.id,
+            sessionId: session.id,
           }),
         });
 

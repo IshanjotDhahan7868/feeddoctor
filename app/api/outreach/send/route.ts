@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
+import { resend } from "@/lib/resend";
 
 /**
  * /api/outreach/send
@@ -17,7 +16,11 @@ export async function POST(req: Request) {
     const { to, subject, html, storeUrl } = body;
 
     if (!to || !subject || !html || !storeUrl) {
-      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+      return apiError("Missing parameters", 400);
+    }
+
+    if (!resend) {
+      return apiError("Email provider is not configured", 503);
     }
 
     // 1️⃣ Send email via Resend
@@ -53,6 +56,6 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error("❌ Outreach send error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return apiError(err.message || "Outreach send failed", 500);
   }
 }

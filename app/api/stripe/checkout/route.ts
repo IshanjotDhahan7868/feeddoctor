@@ -1,14 +1,10 @@
 // /app/api/stripe/checkout/route.ts
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { apiError } from "@/lib/api";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-// Initialize Stripe once with your API key. See: https://stripe.com/docs/api?lang=node
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2022-11-15",
-} as any);
 
 /**
  * Create a Stripe checkout session.
@@ -20,18 +16,34 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 type Body = { sku?: string; email?: string };
 
+function getStripeClient() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    return null;
+  }
+
+  return new Stripe(secretKey, {
+    apiVersion: "2022-11-15",
+  } as any);
+}
+
 export async function POST(req: Request) {
   try {
+    const stripe = getStripeClient();
+    if (!stripe) {
+      return apiError("Missing STRIPE_SECRET_KEY", 500);
+    }
+
     const { sku = "fixpack", email } = (await req.json()) as Body;
 
     const priceId = process.env.STRIPE_PRICE_ID;
     const site = (process.env.SITE_URL || "").trim().replace(/\/+$/, "");
 
     if (!priceId) {
-      return NextResponse.json({ error: "Missing STRIPE_PRICE_ID" }, { status: 500 });
+      return apiError("Missing STRIPE_PRICE_ID", 500);
     }
     if (!site || !site.startsWith("http")) {
-      return NextResponse.json({ error: "SITE_URL is not a valid URL" }, { status: 500 });
+      return apiError("SITE_URL is not a valid URL", 500);
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -42,8 +54,8 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/feed/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/feed/cancel`,
+      success_url: `${site}/feed/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${site}/feed/cancel`,
 
       // capture the email if provided so you know who purchased
       customer_email: email || undefined,
@@ -56,9 +68,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: session.url });
   } catch (err: any) {
     console.error("Checkout error:", err);
-    return NextResponse.json(
-      { error: err?.message ?? "Checkout creation failed" },
-      { status: 500 }
-    );
+    return apiError(err?.message ?? "Checkout creation failed", 500);
   }
 }

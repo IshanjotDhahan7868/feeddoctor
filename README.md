@@ -50,7 +50,7 @@ FeedDoctor is a full‑stack web application that helps merchants fix Google Mer
    pnpm prisma:seed # optional seed script (not included in demo)
    ```
 
-   The default development configuration uses SQLite with the file `dev.db`. To switch to Postgres in production set `DATABASE_PROVIDER="postgresql"` and `DATABASE_URL` to your connection string in `.env` before running migrations.
+   The current Prisma configuration uses PostgreSQL in all environments. Set `DATABASE_URL` (and `DIRECT_URL` if used by your provider) in `.env` before running migrations. For local development, use a local Postgres instance or a managed dev database.
 
 3. **Configure environment variables**
 
@@ -63,6 +63,9 @@ FeedDoctor is a full‑stack web application that helps merchants fix Google Mer
    - `BLOB_READ_WRITE_TOKEN` – optional token for Vercel Blob. The demo uses data URIs instead of real uploads.
    - `MOCK_MODE` – set to `true` to return seeded/demo data without performing external network calls or scraping.
    - `RATE_LIMIT_MAX` – maximum number of POST requests per minute per IP on scan/fulfil/discover/analyze/drafts API routes.
+   - `DATABASE_URL` – required in current configuration (PostgreSQL datasource used by Prisma).
+   - `DIRECT_URL` – optional direct database connection used by Prisma for migrations/introspection.
+   - `SITE_URL` – base URL used by Stripe checkout redirects.
 
    For optional Gmail integration you must set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL` and `NEXTAUTH_SECRET`. Scopes used are `openid email profile`, `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/gmail.compose` (not `gmail.send`). The `GMAIL_LABEL_FILTER` can be customised to filter relevant threads.
 
@@ -81,7 +84,7 @@ Deploy FeedDoctor to [Vercel](https://vercel.com/) for the best experience. Set 
 1. Push your repository to GitHub.
 2. Create a new project on Vercel and import the repository.
 3. Set environment variables in the Vercel dashboard.
-4. Deploy. Vercel will build the Next.js application and provision a SQLite database by default. For Postgres, add a managed database and update `DATABASE_PROVIDER`/`DATABASE_URL`.
+4. Deploy. Vercel will build the Next.js application. Configure a managed Postgres database and set `DATABASE_URL` (and `DIRECT_URL` when applicable) in project environment variables.
 
 ## Legal & Compliance
 
